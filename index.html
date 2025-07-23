@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Arq</title>
+        <style>
+            body { margin: 0; overflow: hidden; }
+            canvas { display: block; }
+        </style>
+    </head>
+  <body>
+
+    <progress id="progressBar" value="0" max="100"
+        style="position: absolute; top: 10px; left: 10px; width: 300px; height: 20px; z-index: 1000;">
+    </progress>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.178.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.178.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+        let start_position = [11.11188240878451, 13.492592334310622, 18.27533832372658]
+        let start_rotation = [-0.635967775465655, 0.4549342851279936, 0.31369752182268634]
+        let start_model = 'models/Modern_Apartments.glb'
+
+        // let start_position = [0, 0,]
+        // let start_rotation = [0, 0, 0]
+
+        import * as THREE from 'three';
+        import { VRButton } from 'three/addons/webxr/VRButton.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { CameraInputManager } from './control.js?v=m121112222axxxzzZZZzzxxAx';
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+        // camera.position.set(start_position[0], start_position[1], start_position[2]);
+        // camera.rotation.set(start_rotation[0], start_rotation[1], start_rotation[2]);
+
+
+
+            const rig = new THREE.Group();
+            rig.position.set(start_position[0], start_position[1], start_position[2]); // Usuario parado a 1.6m del piso
+            rig.rotation.set(start_rotation[0], start_rotation[1], start_rotation[2]);
+            rig.add(camera);
+            scene.add(rig);
+
+
+
+        // scene.position.set(0, 0, -4)
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(innerWidth, innerHeight);
+        renderer.xr.enabled = true;
+        document.body.appendChild(renderer.domElement);
+        document.body.appendChild(VRButton.createButton(renderer, {
+					requiredFeatures: [ 'hand-tracking' ]
+			}));
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x444444));
+
+
+
+        const loader = new GLTFLoader();
+        loader.load(start_model, gltf => {
+            scene.add(gltf.scene)
+            progressBar.style.display = 'none'
+        },
+            function (xhr) {
+                if (xhr.lengthComputable) {
+                const percent = (xhr.loaded / xhr.total) * 100;
+                progressBar.value = percent;
+            }
+        });
+
+        // const geometry = new THREE.BoxGeometry(1, 1, 1);
+        // const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+        // const cube = new THREE.Mesh(geometry, material);
+        // cube.position.set(0, 0, -4)
+        // scene.add(cube);
+
+
+        
+        const input = new CameraInputManager(camera, renderer, rig);
+        input.init();
+
+        renderer.setAnimationLoop(() => {
+
+            rig.position.x = start_position[0] - Math.sin(Date.now() * 0.0001) * 4 - 4
+
+            input.update();
+            renderer.render(scene, camera);
+        });
+    </script>
+  </body>
+</html>
